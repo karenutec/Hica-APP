@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
+import 'home_screen.dart';
 import 'face_capture_screen.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -14,9 +15,38 @@ class _LoginScreenState extends State<LoginScreen> {
   String _email = '';
   String _password = '';
 
-  void _submit() async {
-    // ... (mantén tu lógica de submit actual aquí)
+void _submit() async {
+  if (_formKey.currentState!.validate()) {
+    _formKey.currentState!.save();
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    
+    bool success = await authProvider.signIn(_email, _password);
+    
+    if (success) {
+      // Navegar directamente a la pantalla principal (ajusta esto según tu app)
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => HomeScreen()), // Reemplaza con la pantalla correcta
+      );
+    } else {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text('Error'),
+          content: Text('No se pudo iniciar sesión. Verifica tus credenciales.'),
+          actions: <Widget>[
+            TextButton(
+              child: Text('OK'),
+              onPressed: () {
+                Navigator.of(ctx).pop();
+              },
+            ),
+          ],
+        ),
+      );
+    }
   }
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -33,7 +63,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   'assets/logo.svg',
                   width: 150,
                   height: 150,
-                ), // Reemplaza esto con tu logo
+                ), // Reemplaza con tu logo
                 SizedBox(height: 50),
                 Card(
                   elevation: 5,
