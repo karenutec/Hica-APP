@@ -1,41 +1,29 @@
-import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'dart:convert';
 import '../models/user.dart';
 
 class AuthService {
-  
-  final String _loginUrl = 'http://192.168.1.12:4500/api/v10/login';
+  final String baseUrl = 'http://192.168.1.12:4500';
 
-  Future<User?> signIn(String email, String password) async {
+  Future<Map<String, dynamic>?> signIn(String email, String password) async {
     try {
       final response = await http.post(
-        Uri.parse(_loginUrl),
+        Uri.parse('$baseUrl/api/v10/login'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'email': email,
-          'password': password,
-        }),
+        body: json.encode({'email': email, 'password': password}),
       );
 
       if (response.statusCode == 200) {
-        final responseData = jsonDecode(response.body);
-
-        final String token = responseData['data']['token'];
-        final Map<String, dynamic> userData = responseData['data']['user'];
-
-        // Crea el usuario con la información proporcionada por la API
-        final user = User(
-          id: userData['id'],
-          email: userData['email'],
-          token: token,
-        );
-        return user;
+        final Map<String, dynamic> decodedResponse = json.decode(response.body);
+        print('Respuesta decodificada: $decodedResponse'); // Para depuración
+        return decodedResponse;
       } else {
-        print('Error: ${response.body}');
+        print('Error en la autenticación: ${response.statusCode}');
+        print('Cuerpo de la respuesta: ${response.body}');
         return null;
       }
     } catch (e) {
-      print('Exception: $e');
+      print('Excepción en AuthService.signIn: $e');
       return null;
     }
   }

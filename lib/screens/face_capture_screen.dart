@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'dart:io';
+import '../models/veterinario.dart';
+import './home_screen.dart';
 
 class FaceCaptureScreen extends StatefulWidget {
+  final Veterinario veterinario;
+
+  FaceCaptureScreen({Key? key, required this.veterinario}) : super(key: key);
+
   @override
   _FaceCaptureScreenState createState() => _FaceCaptureScreenState();
 }
@@ -11,8 +17,6 @@ class _FaceCaptureScreenState extends State<FaceCaptureScreen> {
   CameraController? _controller;
   Future<void>? _initializeControllerFuture;
   File? _capturedImage;
-  List<CameraDescription>? cameras;
-  int selectedCameraIndex = 0; // Para rastrear qué cámara está seleccionada
 
   @override
   void initState() {
@@ -21,20 +25,13 @@ class _FaceCaptureScreenState extends State<FaceCaptureScreen> {
   }
 
   Future<void> _initializeCamera() async {
-    cameras = await availableCameras();
-    if (cameras != null && cameras!.isNotEmpty) {
-      // Inicializa con la cámara frontal si está disponible
-      selectedCameraIndex = cameras!.indexWhere(
-        (camera) => camera.lensDirection == CameraLensDirection.front
-      );
-      if (selectedCameraIndex == -1) selectedCameraIndex = 0; // Si no hay frontal, usa la primera
-
-      _controller = CameraController(
-        cameras![selectedCameraIndex],
-        ResolutionPreset.medium,
-      );
-      _initializeControllerFuture = _controller!.initialize();
-    }
+    final cameras = await availableCameras();
+    final firstCamera = cameras.first;
+    _controller = CameraController(
+      firstCamera,
+      ResolutionPreset.medium,
+    );
+    _initializeControllerFuture = _controller!.initialize();
     if (mounted) setState(() {});
   }
 
@@ -42,23 +39,6 @@ class _FaceCaptureScreenState extends State<FaceCaptureScreen> {
   void dispose() {
     _controller?.dispose();
     super.dispose();
-  }
-
-  void _toggleCamera() async {
-    if (cameras == null || cameras!.length < 2) return;
-
-    selectedCameraIndex = (selectedCameraIndex + 1) % cameras!.length;
-    CameraDescription selectedCamera = cameras![selectedCameraIndex];
-
-    await _controller?.dispose();
-
-    _controller = CameraController(
-      selectedCamera,
-      ResolutionPreset.medium,
-    );
-
-    _initializeControllerFuture = _controller!.initialize();
-    setState(() {});
   }
 
   Future<void> _captureImage() async {
@@ -71,6 +51,17 @@ class _FaceCaptureScreenState extends State<FaceCaptureScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Imagen capturada con éxito')),
       );
+      
+      // Aquí deberías implementar la lógica para guardar la imagen
+      // Por ejemplo, subirla a un servidor o guardarla localmente
+      
+      // Simularemos un guardado exitoso después de 2 segundos
+      await Future.delayed(Duration(seconds: 2));
+      
+      // Navegar al HomeScreen
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => HomeScreen()),
+      );
     } catch (e) {
       print(e);
       ScaffoldMessenger.of(context).showSnackBar(
@@ -82,7 +73,9 @@ class _FaceCaptureScreenState extends State<FaceCaptureScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Captura de Imagen')),
+      appBar: AppBar(
+        title: Text('Captura de Imagen'),
+      ),
       body: FutureBuilder<void>(
         future: _initializeControllerFuture,
         builder: (context, snapshot) {
@@ -98,26 +91,16 @@ class _FaceCaptureScreenState extends State<FaceCaptureScreen> {
                 ),
                 Padding(
                   padding: const EdgeInsets.all(16.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      ElevatedButton(
-                        child: Text(_capturedImage == null ? 'Capturar' : 'Capturar de nuevo'),
-                        onPressed: _captureImage,
-                        style: ElevatedButton.styleFrom(
-                          padding: EdgeInsets.symmetric(horizontal: 30, vertical: 15),
-                        ),
-                      ),
-                      ElevatedButton(
-                        child: Icon(Icons.flip_camera_ios),
-                        onPressed: _toggleCamera,
-                        style: ElevatedButton.styleFrom(
-                          padding: EdgeInsets.all(15),
-                        ),
-                      ),
-                    ],
+                  child: ElevatedButton(
+                    child: Text(_capturedImage == null ? 'Capturar' : 'Guardar y Continuar'),
+                    onPressed: _captureImage,
+                    style: ElevatedButton.styleFrom(
+                      padding: EdgeInsets.symmetric(horizontal: 50, vertical: 15),
+                    ),
                   ),
                 ),
+                Text('Veterinario: ${widget.veterinario.dependencia}'),
+                Text('N° de Registro: ${widget.veterinario.nDeRegistro}'),
               ],
             );
           } else {
