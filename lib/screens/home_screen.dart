@@ -4,64 +4,131 @@ import '../providers/auth_provider.dart';
 import '../services/tratamiento_service.dart';
 import '../models/tratamiento.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
+  @override
+  _HomeScreenState createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  late TratamientoService _tratamientoService;
+
+  @override
+  void initState() {
+    super.initState();
+    _tratamientoService = TratamientoService(Provider.of<AuthProvider>(context, listen: false));
+  }
+
+  Future<List<Tratamiento>> _loadTratamientos() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final veterinario = authProvider.veterinario;
+    if (veterinario != null) {
+      return _tratamientoService.getTratamientosByVeterinarioId(veterinario.id);
+    }
+    return [];
+  }
+
+  Future<void> _refreshTratamientos() async {
+    setState(() {});
+  }
+
+  Widget _buildStatusLabel(String estado) {
+    Color color;
+    switch (estado.toLowerCase()) {
+      case 'pendiente':
+        color = Colors.orange;
+        break;
+      case 'aprobado':
+        color = Colors.green;
+        break;
+      case 'rechazado':
+        color = Colors.red;
+        break;
+      default:
+        color = Colors.grey;
+    }
+
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        estado,
+        style: TextStyle(color: Colors.white, fontSize: 12),
+      ),
+    );
+  }
+
+  Future<void> _showAutorizationDialog(BuildContext context, Tratamiento tratamiento) async {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Autorización de Tratamiento'),
+          content: SingleChildScrollView(
+            child: ListBody(
+              children: <Widget>[
+                Text('¿Qué acción desea tomar para el siguiente tratamiento?'),
+                SizedBox(height: 10),
+                Text('Medicación: ${tratamiento.medicacion}'),
+                Text('Fecha: ${tratamiento.fecha}'),
+                Text('Hora: ${tratamiento.hora}'),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: Text('Cancelar'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: Text('Rechazar'),
+              onPressed: () async {
+                try {
+                  await _tratamientoService.actualizarEstadoTratamiento(tratamiento.id, 'RECHAZADO');
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Tratamiento rechazado')),
+                  );
+                  _refreshTratamientos();
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error al rechazar el tratamiento: $e')),
+                  );
+                }
+              },
+            ),
+            TextButton(
+              child: Text('Autorizar'),
+              onPressed: () async {
+                try {
+                  await _tratamientoService.actualizarEstadoTratamiento(tratamiento.id, 'APROBADO');
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Tratamiento autorizado')),
+                  );
+                  _refreshTratamientos();
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error al autorizar el tratamiento: $e')),
+                  );
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
-    final veterinario = authProvider.veterinario;
-    final TratamientoService tratamientoService = TratamientoService(authProvider);
-
-    Future<void> _refreshTratamientos() async {
-      // Forzar una reconstrucción del widget
-      await Future.delayed(Duration.zero);
-    }
-
-    Future<void> _showAutorizationDialog(BuildContext context, Tratamiento tratamiento) async {
-      return showDialog<void>(
-        context: context,
-        barrierDismissible: false, // El usuario debe tocar un botón para cerrar el diálogo
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: Text('Autorización de Tratamiento'),
-            content: SingleChildScrollView(
-              child: ListBody(
-                children: <Widget>[
-                  Text('¿Qué acción desea tomar para el siguiente tratamiento?'),
-                  SizedBox(height: 10),
-                  Text('Medicación: ${tratamiento.medicacion}'),
-                  Text('Fecha: ${tratamiento.fecha}'),
-                  Text('Hora: ${tratamiento.hora}'),
-                ],
-              ),
-            ),
-            actions: <Widget>[
-              TextButton(
-                child: Text('Cancelar'),
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-              ),
-              TextButton(
-                child: Text('Rechazar'),
-                onPressed: () {
-                  // Aquí iría la lógica para rechazar el tratamiento
-                  // Por ejemplo: tratamientoService.rechazarTratamiento(tratamiento.id);
-                  Navigator.of(context).pop();
-                },
-              ),
-              TextButton(
-                child: Text('Autorizar'),
-                onPressed: () {
-                  // Aquí iría la lógica para autorizar el tratamiento
-                  // Por ejemplo: tratamientoService.autorizarTratamiento(tratamiento.id);
-                  Navigator.of(context).pop();
-                },
-              ),
-            ],
-          );
-        },
-      );
-    }
+    final user = authProvider.user;
 
     return Scaffold(
       backgroundColor: const Color(0xFF1E3A5F),
@@ -73,6 +140,13 @@ class HomeScreen extends StatelessWidget {
             icon: Icon(Icons.notifications_outlined, color: Colors.white),
             onPressed: () {
               // Implementar funcionalidad de notificaciones
+            },
+          ),
+          IconButton(
+            icon: Icon(Icons.exit_to_app, color: Colors.white),
+            onPressed: () {
+              authProvider.signOut();
+              Navigator.of(context).pushReplacementNamed('/login');
             },
           ),
         ],
@@ -101,7 +175,7 @@ class HomeScreen extends StatelessWidget {
                           style: TextStyle(color: Colors.white70),
                         ),
                         Text(
-                          'Karen Etchepare',
+                          user?.email ?? 'Nombre no disponible',
                           style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
                         ),
                       ],
@@ -137,13 +211,8 @@ class HomeScreen extends StatelessWidget {
             ),
             Expanded(
               child: FutureBuilder<List<Tratamiento>>(
-                future: veterinario != null
-                    ? tratamientoService.getTratamientosByVeterinarioId(veterinario.id)
-                    : Future.value([]),
+                future: _loadTratamientos(),
                 builder: (context, snapshot) {
-                  if (veterinario == null) {
-                    return Center(child: Text('No hay información de veterinario disponible', style: TextStyle(color: Colors.white)));
-                  }
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return Center(child: CircularProgressIndicator());
                   } else if (snapshot.hasError) {
@@ -170,9 +239,17 @@ class HomeScreen extends StatelessWidget {
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        Text(
-                                          tratamiento.medicacion,
-                                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Expanded(
+                                              child: Text(
+                                                tratamiento.medicacion,
+                                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                              ),
+                                            ),
+                                            _buildStatusLabel(tratamiento.estadoAutorizacion),
+                                          ],
                                         ),
                                         SizedBox(height: 4),
                                         Text('Fecha: ${tratamiento.fecha}'),
