@@ -1,24 +1,22 @@
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import '../models/veterinario.dart';
+import '../models/tratamiento.dart';
 import '../providers/auth_provider.dart';
 
-class VeterinarioService {
+class TratamientoService {
   final String baseUrl = 'http://192.168.1.9:4500';
   final AuthProvider authProvider;
 
-  VeterinarioService(this.authProvider);
+  TratamientoService(this.authProvider);
 
-  Future<Veterinario> getVeterinarioDetails(String userId) async {
+  Future<List<Tratamiento>> getTratamientosByVeterinarioId(int veterinarioId) async {
     final token = authProvider.token;
     if (token == null) {
       throw Exception('No hay token de autenticación');
     }
 
-
-
     final response = await http.get(
-      Uri.parse('$baseUrl/api/v10/veterinarios/$userId'),
+      Uri.parse('$baseUrl/api/v10/tratamientos/veterinario/$veterinarioId'),
       headers: <String, String>{
         'Content-Type': 'application/json; charset=UTF-8',
         'Authorization': 'Bearer $token',
@@ -26,9 +24,10 @@ class VeterinarioService {
     );
 
     if (response.statusCode == 200) {
-      return Veterinario.fromJson(json.decode(response.body));
-    } else {
-      throw Exception('Error al cargar veterinario: ${response.statusCode}');
-    }
-  }
+        List<dynamic> jsonData = json.decode(response.body);
+        return jsonData.map((json) => Tratamiento.fromJson(json)).toList();
+      } else {
+        throw Exception('Failed to load tratamientos: ${response.statusCode}');
+      }
+    } 
 }

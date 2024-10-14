@@ -3,7 +3,7 @@ import 'dart:convert';
 import '../models/user.dart';
 
 class AuthService {
-  final String baseUrl = 'http://192.168.1.12:4500';
+  final String baseUrl = 'http://192.168.1.9:4500';
 
   Future<Map<String, dynamic>?> signIn(String email, String password) async {
     try {
