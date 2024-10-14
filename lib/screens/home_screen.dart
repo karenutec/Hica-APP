@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../services/tratamiento_service.dart';
 import '../models/tratamiento.dart';
+import 'package:local_auth/local_auth.dart';
+
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -11,12 +13,28 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   late TratamientoService _tratamientoService;
+  LocalAuthentication auth = LocalAuthentication();
+
 
   @override
   void initState() {
     super.initState();
     _tratamientoService = TratamientoService(Provider.of<AuthProvider>(context, listen: false));
   }
+
+  Future<bool> _authenticate() async {
+  bool isAuthenticated = false;
+  try {
+    isAuthenticated = await auth.authenticate(
+      localizedReason: 'Por favor autorice la aprobación o rechazo del tratamiento',
+      options: const AuthenticationOptions(biometricOnly: true),
+    );
+  } catch (e) {
+    print(e);
+  }
+  return isAuthenticated;
+}
+
 
   Future<List<Tratamiento>> _loadTratamientos() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
@@ -86,25 +104,10 @@ class _HomeScreenState extends State<HomeScreen> {
               },
             ),
             TextButton(
-              child: Text('Rechazar'),
-              onPressed: () async {
-                try {
-                  await _tratamientoService.actualizarEstadoTratamiento(tratamiento.id, 'RECHAZADO');
-                  Navigator.of(context).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Tratamiento rechazado')),
-                  );
-                  _refreshTratamientos();
-                } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error al rechazar el tratamiento: $e')),
-                  );
-                }
-              },
-            ),
-            TextButton(
-              child: Text('Autorizar'),
-              onPressed: () async {
+            child: Text('Autorizar'),
+            onPressed: () async {
+              bool isAuthenticated = await _authenticate();
+              if (isAuthenticated) {
                 try {
                   await _tratamientoService.actualizarEstadoTratamiento(tratamiento.id, 'APROBADO');
                   Navigator.of(context).pop();
@@ -117,8 +120,38 @@ class _HomeScreenState extends State<HomeScreen> {
                     SnackBar(content: Text('Error al autorizar el tratamiento: $e')),
                   );
                 }
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Autenticación fallida')),
+                );
+              }
+            },
+            ),
+            TextButton(
+              child: Text('Rechazar'),
+              onPressed: () async {
+                bool isAuthenticated = await _authenticate();
+                if (isAuthenticated) {
+                  try {
+                    await _tratamientoService.actualizarEstadoTratamiento(tratamiento.id, 'RECHAZADO');
+                    Navigator.of(context).pop();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Tratamiento rechazado')),
+                    );
+                    _refreshTratamientos();
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Error al rechazar el tratamiento: $e')),
+                    );
+                  }
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Autenticación fallida')),
+                  );
+                }
               },
             ),
+
           ],
         );
       },
