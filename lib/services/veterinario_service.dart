@@ -4,7 +4,7 @@ import '../models/veterinario.dart';
 import '../providers/auth_provider.dart';
 
 class VeterinarioService {
-  final String baseUrl = 'http://192.168.1.9:4500';
+  final String baseUrl = 'http://hicaapimovil.azure-api.net/movil';
   final AuthProvider authProvider;
 
   VeterinarioService(this.authProvider);
@@ -18,7 +18,7 @@ class VeterinarioService {
 
 
     final response = await http.get(
-      Uri.parse('$baseUrl/api/v10/veterinarios/$userId'),
+      Uri.parse('$baseUrl/veterinarios/$userId'),
       headers: <String, String>{
         'Content-Type': 'application/json; charset=UTF-8',
         'Authorization': 'Bearer $token',

@@ -3,12 +3,12 @@ import 'dart:convert';
 import '../models/user.dart';
 
 class AuthService {
-  final String baseUrl = 'http://192.168.1.9:4500';
+  final String baseUrl = 'http://hicaapimovil.azure-api.net/movil';
 
   Future<Map<String, dynamic>?> signIn(String email, String password) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/api/v10/login'),
+        Uri.parse('$baseUrl/login'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'email': email, 'password': password}),
       );

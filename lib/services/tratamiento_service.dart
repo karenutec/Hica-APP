@@ -4,7 +4,7 @@ import '../models/tratamiento.dart';
 import '../providers/auth_provider.dart';
 
 class TratamientoService {
-  final String baseUrl = 'http://192.168.1.9:4500/api/v10';
+  final String baseUrl = 'http://hicaapimovil.azure-api.net/movil';
   final AuthProvider authProvider;
 
   TratamientoService(this.authProvider);
