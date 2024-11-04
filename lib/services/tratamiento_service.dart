@@ -2,9 +2,10 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../models/tratamiento.dart';
 import '../providers/auth_provider.dart';
+import '../config/env.dart';
 
 class TratamientoService {
-  final String baseUrl = 'http://hicaapimovil.azure-api.net/movil';
+  final String baseUrl = Environment.baseUrl;
   final AuthProvider authProvider;
 
   TratamientoService(this.authProvider);
@@ -14,6 +15,18 @@ class TratamientoService {
     if (token == null) {
       throw Exception('No hay token de autenticación');
     }
+
+
+
+     // Logs detallados de la solicitud
+    print('\n=== DETALLES DE LA SOLICITUD ===');
+    print('URL completa: $veterinarioId');
+    print('Método: PUT');
+    print('Headers: {');
+    print('  Authorization: Bearer $token');
+    print('  Content-Type: application/json');
+    print('}');
+    print('================================\n');
 
     final response = await http.get(
       Uri.parse('$baseUrl/tratamientos/veterinario/$veterinarioId'),

@@ -2,9 +2,10 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../models/veterinario.dart';
 import '../providers/auth_provider.dart';
+import '../config/env.dart';
 
 class VeterinarioService {
-  final String baseUrl = 'http://hicaapimovil.azure-api.net/movil';
+  final String baseUrl = Environment.baseUrl;
   final AuthProvider authProvider;
 
   VeterinarioService(this.authProvider);

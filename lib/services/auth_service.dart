@@ -1,9 +1,9 @@
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import '../models/user.dart';
+import '../config/env.dart';
 
 class AuthService {
-  final String baseUrl = 'http://hicaapimovil.azure-api.net/movil';
+  final String baseUrl = Environment.baseUrl;
 
   Future<Map<String, dynamic>?> signIn(String email, String password) async {
     try {
